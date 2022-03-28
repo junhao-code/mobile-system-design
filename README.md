@@ -118,9 +118,61 @@ _Still not sure?_ Ask your interviewer if they want you to draw a high-level dia
 ## Deep Dive: Tweet Feed Flow
 After a high-level discussion, your interviewer might steer the conversation towards some specific component of the system. Let's assume it was "Tweet Feed Flow". Things you might want to talk about:
 - **Architecture patterns**: MVP, MVVM, MVI, etc. MVC is considered a poor choice these days. It's better to select a well known pattern since it makes it easier to onboard new hires (compared to some less known home-grown approaches).
+    * MVI
+        * pro
+            * introduction of View state makes it clear to see how the View should render itself
+            * single source of truth (View State)
+            * Easier to manage one observable stream between the View and the Presenter
+        * con
+            * state reducers introduces a high level of complexity to both create and maintain
+            * Presenter’s life being tied to the activity creates opportunity for memory leaks and crashes
+    * MVP
+        * pro
+            * solves the tight-coupling issue with MVC
+            * simple to implement, not much learning curve required
+            * easy to implement with DI   
+        * con
+            * Presenter’s life being tied to the activity creates opportunity for memory leaks and crashes
+    * MVVM
+        * pro
+            * VM can survive lifecycle and config changes
+            * multiple activities / fragments could use the same VM simultaneously
+        * con
+            * heavily reliant on Android Architecture components
+            * hardest to implement with DI 
 - **Pagination**: essential for an infinite scroll functionality. For more details see Pagination.
 - **Dependency injection**: helps building an isolated and testable module.
+    * Dagger / Hilt (reflection based that connect dependencies at runtime)
+        * Hilt benefits over Dagger 
+            * Components for integrating Android framework classes with Dagger that you would otherwise need to create by hand.
+            * Scope annotations to use with the components that Hilt generates automatically.
+            * Predefined bindings to represent Android classes such as Application or Activity.
+            * Predefined qualifiers to represent @ApplicationContext and @ActivityContext.
+    * Guice ()
+    * Benefits
+        - improve reusability and decoupling of dependencies
+        - improve testability
+        - ease of refactoring
+    * Major ways of dependency injection
+        - Constructor injection
+        - Field injection (setter injection)
+        - instantiated after the class is created (e.g. car.engine = new Engine())
 - **Image Loading**: low-res vs full-res image loading, scrolling performance, etc.
+    * Glide
+        * pro
+            * memory efficient because it loads image according to the size of the view
+            * support gif
+            * fast cache download speed
+            * 
+        * con
+            * large library size
+    * Picasso
+        * pro
+            * Lightweight. does not inflate the size of the apk
+            * fast web download speed 
+        * con
+            * does not support gif
+    * Fresco
 
 ![Details Diagram](/images/tweet-details.svg)
 ### Components
@@ -175,25 +227,33 @@ Polling requires the client to periodically ask the server for updates. The bigg
     - cons:
       - the notification can be delayed for as long as the polling time interval.
       - additional overhead due to TLS Handshake and HTTP-headers 
+      - could impact battery usage
   - **long polling**:
+     - client make requests to the backend, and depending on whether there's available data to be returned, the connection will stay open b/w client and server for as long as possible, until a response is ready or a timeout threshold is reached. Upon receiving the response from server, client could immediately initiate a new long-poll request or after a pause
      - pros:
+       - compatible with and supported by every environment and every browser
        - instant notification (no additional delay).
      - cons:
        - more complex and requires more server-side resources.
-       - keeps a persistent connection until the server replies.
+       - keeps a persistent connection until the server replies which could impace battery usage
 - **Server-Sent Events**  
-Allows the client to stream events over an HTTP connection without polling.
+Allows the client to stream events over an HTTP connection without polling. Can be considered as a one-way publish-subscribe model
   - pros:
     - real-time traffic using a single connection.
+    - built-in support for reconnection
   - cons:
     - keeps a persistent connection.
+    - doesn't support binary data
+    - limited open connections allowed
 - **Web-Sockets**:  
-Provide a bi-directional communication between client and server.
+provides a full-duplex communication channels over a single TCP connection. Active connection established b/w backend and client, backend is responsible for pushing resources / responses back to client whenever there's new data. During this time, client could also make new requests to server for new data which makes it a bidirectional communication channel
   - pros:
     - can transmit both binary and text data.
+    - offers bi-directional communication in realtime, low latency
+    - less request overhead (no headers sent after the connection is established) 
   - cons:
     - more complex to set-up compared to Polling/SSE.
-    - keeps a persistent connection.
+    - keeps a persistent connection which could consume a large amount of server resources
 
 The interviewer would expect you to **pick a concrete approach** most suitable for the design task at hand. One possible solution for the "Design Twitter Feed" question could be using a combination of SSE (a primary channel of receiving real-time updates on "likes") with Push Notifications (sent if the client does not have an active connection to the backend).
 
@@ -202,24 +262,42 @@ The interviewer would expect you to **pick a concrete approach** most suitable f
 A text-based stateless protocol - most popular choice for CRUD (Create, Read, Update, and Delete) operations.
 - pros:
   - easy to learn, understand, and implement.
-  - easy to cache using built-in HTTP caching mechanism.
+  - same resource (URI) can be fetched in different data formats(JSON, XML, etc)
+  - stateless - highly scalable, could improve availability of the app
+  - easy to cache using built-in HTTP caching mechanism. (could cache calls with different URIs)
   - loose coupling between client and server.
 - cons:
   - less efficient on mobile platforms since every request requires a separate physical connection.
-  - schemaless - it's hard to check data validity on the client.
+  - schemaless - it's hard to check data validity on the client, over / under fetching of data as the queries data structure is predefined by the server
   - stateless - needs extra functionality to maintain a session.
   - additional overhead - every request contains contextual metadata and headers.
+- when to use:
+  - Limited bandwidth and resources.
+  - Ease of coding is a requirement. (Although each API needs to be coded separately)
+  - Caching is a requirement.
+  - Not meant for streaming communication.
+  - Not meant for bi-directional communication.
 
 #### GraphQL
 A query language for working with API - allows clients to request data from several resources using a single endpoint (instead of making multiple requests in traditional RESTful apps).
 - pros:
+  - single endpoint and single HTTP method (POST), and the client has more power on what it wants by specifying it in the request payload
   - schema-based typed queries - clients can verify data integrity and format.
-  - highly customizable - clients can request specific data and reduce the amount of HTTP-traffic.
+  - highly customizable - clients can achieve precise fetching by requesting specific data, and in turn reduce the amount of HTTP-traffic.
+  - fast - single network call can accommodate all the data client requests, in contrast to multiple calls with RESTFul APIs
   - bi-directional communication with GraphQL Subscriptions (WebSocket based).
 - cons:
-  - more complex backend implementation.
+  - complex queries will result in more complex backend implementation.
+  - complicated caching since it makes use of a single URL
+  - complicated rate limiting
   - "leaky-abstraction" - clients become tightly coupled to the backend.
   - the performance of a query is bound to the performance of the slowest service on the backend (in case the response data is federated between multiple services).
+- when to use:
+  - Rapid changing of data requirements? Consider GraphQL!
+  - When the clients need to dynamically iterate and design data as per their need, thereby making efficient use of limited bandwidth.
+  - Caching, rate-limiting, monitoring is not a requirement.
+  - Not meant for streaming communication.
+  - Not meant for bi-directional communication.
 
 #### WebSocket
 Full-duplex communication over a single TCP connection.
@@ -230,7 +308,9 @@ Full-duplex communication over a single TCP connection.
   - requires maintaining an active connection - might have poor performance on unstable cellular networks.
   - schemaless - it's hard to check data validity on the client.
   - the number of active connections on a single server is limited to 65k.
-
+- when to use?
+	- When there is a need for to-and/or-from transmission of data at a HIGH rate.
+	- Chat applications, games, etc.
 Learn more about WebSockets:
 - [WebSocket Tutorial - How WebSockets Work](https://www.youtube.com/watch?v=pNxK8fPKstc)
 
@@ -245,6 +325,9 @@ Remote Procedure Call framework which runs on top of HTTP/2. Supports bi-directi
   - limited browser support.
   - non human-readable format.
   - steeper learning curve.
+- when to use?
+	- Mainly used for communication between internal/private systems.
+	- Real-time streaming applications and IOT applications. (smart light switches, voice controllers, etc)
 
 The interviewer would expect you to **pick a concrete approach** most suitable for the design task at hand. Since the API layer for the "Design Twitter Feed" question is pretty simple and does not require much customization - we can select an approach based on REST.
 
@@ -269,8 +352,10 @@ Uses the values from the last page to fetch the next set of items. Example: `GET
     - "leaky abstraction" - the pagination mechanism becomes aware of the underlying database storage.
     - only works on fields with natural ordering (timestamps, etc).
 - **Cursor/Seek Pagination**  
-Operates with stable ids which are decoupled from the database SQL queries (usually, a selected field is encoded using base64 and encrypted on the backend side). Example: `GET /feed?after_id=t1234xzy&limit=20`.
+The client receives a variable named Cursor along with the response. It is a pointer that points at a particular item that needs to be sent with a request. The server then uses the cursor to seek the other set of items. Cursor-based pagination is more complex and is preferred when dealing with a real-time data set. Operates with stable ids which are decoupled from the database SQL queries (usually, a selected field is encoded using base64 and encrypted on the backend side). Example: `GET /feed?after_id=t1234xzy&limit=20`.
   - pros:
+    - no skipped / duplicate data
+    - effective management of large data sets
     - decouples pagination from SQL database.
     - consistent ordering when new items are inserted.
   - cons:
@@ -340,6 +425,7 @@ Bellow are the most common options for local device data storage:
     - no schema support nor ability to query data.
     - no data migration support.
     - poor performance.
+    - gets deleted on app uninstall or clear data
 - **Database/ORM (sqlite/Room/Core Data/Realm/etc)**:  
   Based on a relational database. Perfect for large amounts of structured data that needs complex querying logic.  
   - pros:
@@ -350,6 +436,15 @@ Bellow are the most common options for local device data storage:
     - more complex setup. 
     - insecure (wrapper libraries available on iOS/Android).
     - bigger memory footprint.
+  - Room
+      - Compile-time verification of SQL queries. each @Query and @Entity is checked at the compile time, that preserves your app from crash issues at runtime and not only it checks the only syntax, but also missing tables.
+      - Boilerplate code
+      - Easily integrated with other Architecture components (like LiveData)
+  - SQLite
+      - There is no compile-time verification of raw SQL queries.
+      - As your schema changes, you need to update the affected SQL queries manually. This process can be time-consuming and error-prone.
+      - You need to use lots of boilerplate code to convert between SQL queries and Java data objects (POJO).
+
 - **Custom/Binary (DataStore/NSCoding/Codable/etc)**:  
   Handles storing and loading data on a low level. Works best when you need to customize the data storage pipeline.  
   - pros:
@@ -369,10 +464,40 @@ Bellow are the most common options for local device data storage:
 ### Storage Location
 - **Internal**  
   Sand-boxed by the app and not readable to other apps (with few exceptions).
+  - pros
+    - available on all devices
+    - good for storing sensitive app specific data
+  - cons
+    - smaller in size than external
+    - user cannot access these files through the file manager
+    - files will be deleted when an app is uninstalled
+- **Internal cache**
+  - pros
+    - good for storing temporary files 
+  - cons
+    - Android may delete these files when the device is low on internal storage space  
 - **External**  
   Publicly visible and most likely not deleted when your app is deleted.
+  - pros
+    - larger in size
+    - good to store non-sensitive data
+    - data can be persistent through app uninstall
+    - data can be accessed by other apps if they have appropriate permissions
+  - cons
+    - not always available
 - **Media/Scoped**  
   Special type of storage for media files.
+  - MediaStore API ( recommended )
+    - optimized index into media collections, that allows easier retrieving and updating media files
+    - interaction is done through ContentResolver
+    - Pros:
+      - retrieve and display media files in a customizable way
+  - Storage Access Framework
+    - framework that allows users to interact with a system picker to choose documents and files
+    - Pro:
+      - no system permissions required
+    - Con
+      - can only interact with a system documents provider
 ### Storage Type
 - **Documents (Automatically Backed Up)**  
   User-generated data that cannot be easily re-generated and will be automatically backed up.
@@ -380,12 +505,28 @@ Bellow are the most common options for local device data storage:
   Data that can be downloaded again or regenerated. Can be deleted by user to free-up space.
 - **Temp**  
   Data that is only used temporary and should be deleted when no longer needed. 
-
+### Storage Format
+- BLOB
+	- DB is ACID (Atomicity, Consistency, Isolation, Durability) compliant
+	- DB provides data integrity between the file and its metadata (Files can be deleted from FS causing database integrity to be compromised.)
+	- Much easier to do full backups as the entire process is built-in Database indexes perform better than file system trees when more number of items are to be stored
+	- File deletion and update becomes simpler as opposed to a File System.( In the case of FS, we first delete the mapping from DB and then delete the image from FS as well. There’s this extra overhead to make sure that the file in FS is deleted. In DB this operation is atomic)
+- File System
+	- If your application uploads a large number of high-quality images, your DB backups become huge, which can have a significant impact on the makes replication speed
+	- FS can be accessed via a CDN without allowing the user’s request to go through your Application and Database layers
+	- Cost-effective as compared to DB
+	- Easier in cases where files has to be shared with third-party providers
+	- Storing/retrieving BLOB in DB is a heavy process
+	- For the application in which the images will be used requires streaming performance, such as real-time video playback
 ### Best Practices
 - Store as little sensitive data as possible.
 - Use encrypted storage if you can't avoid storing sensitive data.
 - Do not allow your app storage grow uncontrollably. Make sure that cleaning up cached files won't affect app functionality.
-
+- prevent users from installing the app on external storage - (android:installLocation="internalOnly)
+- prevent the contents of the app’s private data directory from being downloaded with adb backup - (android:allowBackup="false")
+- encrypt user files with a user-provided password
+	- AES (advanced encryption standard)
+		- symmetric encryption, 256 bits preferred length of the key 
 ### Approach
 You need to select a single approach after listing options and discussing their pros and cons. Don't worry about building a complete solution - just try to lay out a high-level idea without going too deep into details.  
 A possible breakdown for the "Design Twitter Feed" question might look like this:
@@ -443,7 +584,15 @@ Here's a list of concerns to keep in mind while discussing your solution with th
   - Each SDK should be guarded by a feature flag.
   - A new SDK integration should be introduced as an A/B test or a staged rollout.  
   - You need to have a "support and upgrade" plan for the 3rd-party SDKs in a long term.
-
+### Data sharing 
+- ContentProvider
+	- is the tool that allows apps to share persisted files and data with one another. (e.g. Contacts, User Dictionary)
+	- ContentResolver - mechanism
+	- How
+		- content://user_dictionary/words - Content URI
+	- Content providers sit just above the data source of the app, providing an additional level of abstraction from the data repository.
+	- Content provider can be a useful way of making a single data provider if the data is housed in multiple repositories for the app.
+	- Data in a content provider can be accessed via exposed URIs that are matched by the content provider.
 ### Privacy & Security
 - Keep as little of the user's data as possible - don't collect things you won't need.
   - Avoid collecting device IDs (prefer one-time generated pseudo-anonymous IDs).
@@ -557,7 +706,14 @@ A resumable (chunked) media upload breaks down a single upload request in three 
 
 ### Prefetching
 Prefetching improves app performance by hiding the data transfer latency over slow and unreliable networks. The biggest concern while designing your prefetching solution is the increase in battery and cellular data usage.
+- schedule jobs to prefetch data when app gets backgrounded
+	- connection type - unmetered network
+	- job cancellabtion - app gets foregrounded, we should cancel prefetch
+	- batching request - prefetch with less requests and at optimal times
+- analyze user usage pattern to decide what content to prefetch
+	- help prioritize request 
 _TBD_
+
 #### More Info:
 - [Optimize downloads for efficient network access](https://developer.android.com/training/efficient-downloads/efficient-network-access)
 - [Improving performance with background data prefetching](https://instagram-engineering.com/improving-performance-with-background-data-prefetching-b191acb39898)
