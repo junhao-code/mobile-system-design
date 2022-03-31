@@ -61,7 +61,8 @@ A high-level diagram shows all major system components and their interactions (w
 
 ### Components:
 - **Image Request** - encapsulates a single image request; accepted by request manager as input.  
-- **Request Manager** - accepts and dispatches image requests to corresponding targets.  
+- **Request Manager** - accepts and dispatches image requests to corresponding targets.
+- 
 - **Image Cache** - fast in-memory image storage for quicker access.
 - **Image Loader** - coordinates image loading from different source (filesystem, app resources, network).
 - **Image Target** - incapsulate image target destination (UI-element, in-memory image data, etc).
@@ -162,8 +163,8 @@ ImageRequest:
 + into(target: ImageView): ImageRequest // we can overload this to support multiple targets
 ```
 
-> **Candidate**: "We can register lifecycle callbacks with UI-targets (ImageView, Button, etc) for easier control of resources. For example, we can stop loading when the target is detached from the view hierarchy, becomes invisible, or gets recycled as a part of list scrolling."  
-
+> **Candidate**: "We can register lifecycle callbacks with UI-targets (ImageView, Button, etc) for easier control of resources. For example, we can stop loading when the target is detached from the view hierarchy, becomes invisible, or gets recycled as a part of list scrolling."  In particular, we could pass FragmentManager as the parameter when instantiating RequestManager (except for global RequestManager), now an invisible Fragment will be created first, and added to teh current screen through FragmentManager, and this invisible Fragment will be used to detect the lifecycle of the screen.
+https://programmer.group/deep-understanding-of-glide-life-cycle-management.html 
 _NOTE: We're not going to discuss the actual implementation here since it greatly depends on the UI framework. Make sure to discuss what mechanisms you would use and how to prevent memory leaks._
 
 ## Follow-up Questions
