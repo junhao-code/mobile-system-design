@@ -87,6 +87,7 @@ Abstracts client-server communications from the rest of the system.
 A single source of truth. The data your system receives gets persisted on the disk first and then propagated to other components.
 - **Repository**  
 A mediator component between API Service and Persistence.
+**Note** repository pattern helps manage data update in local databases or remote data stores
 - **Tweet Feed Flow**  
 Represents a set of components responsible for displaying an infinite scrollable list of tweets.
 - **Tweet Details Flow**  
@@ -133,6 +134,7 @@ After a high-level discussion, your interviewer might steer the conversation tow
             * easy to implement with DI   
         * con
             * Presenter’s life being tied to the activity creates opportunity for memory leaks and crashes
+            * Presenter cannot survive configuration change, unlike ViewModel
     * MVVM
         * pro
             * VM can survive lifecycle and config changes
@@ -142,13 +144,16 @@ After a high-level discussion, your interviewer might steer the conversation tow
             * hardest to implement with DI 
 - **Pagination**: essential for an infinite scroll functionality. For more details see Pagination.
 - **Dependency injection**: helps building an isolated and testable module.
-    * Dagger / Hilt (reflection based that connect dependencies at runtime)
-        * Hilt benefits over Dagger 
+	* Dependency injection is hard in android is hard because the framework classes are instantiated by the SDK
+    * Dagger / Hilt (static solutions that generate the code to connect dependencies at compile time)
+    	* Dagger cons
+    		* hard to configure / multiple ways to achieve the same thing
+        * Hilt benefits over Dagger            
             * Components for integrating Android framework classes with Dagger that you would otherwise need to create by hand.
             * Scope annotations to use with the components that Hilt generates automatically.
             * Predefined bindings to represent Android classes such as Application or Activity.
             * Predefined qualifiers to represent @ApplicationContext and @ActivityContext.
-    * Guice ()
+    * Guice (reflection based that connect dependencies at runtime)
     * Benefits
         - improve reusability and decoupling of dependencies
         - improve testability
@@ -503,6 +508,7 @@ Bellow are the most common options for local device data storage:
   User-generated data that cannot be easily re-generated and will be automatically backed up.
 - **Cache**  
   Data that can be downloaded again or regenerated. Can be deleted by user to free-up space.
+  https://developer.android.com/topic/performance/graphics/cache-bitmap
 - **Temp**  
   Data that is only used temporary and should be deleted when no longer needed. 
 ### Storage Format
@@ -712,7 +718,25 @@ Prefetching improves app performance by hiding the data transfer latency over sl
 	- batching request - prefetch with less requests and at optimal times
 - analyze user usage pattern to decide what content to prefetch
 	- help prioritize request 
-_TBD_
+	
+### More Info:
+- [Linkedin Story prefetching](https://engineering.linkedin.com/blog/2020/building-stories-on-ios)
+
+### Testing
+- Benefit: 
+	- Testing is an integral part of the app development process. By running tests against your app consistently, you can verify your app's correctness, functional behavior, and usability before you release it publicly.
+- Types of test:
+	- Functional testing: does my app do what it's supposed to?
+	- Performance testing: does it do it quickly and efficiently?
+	- Accessibility testing: does it work well with accessibility services?
+	- Compatibility testing: does it work well on every device and API level?
+- Scope of test:
+	- **Unit tests** or small tests only verify a very small portion of the app, such as a method or class.
+	- **Medium tests** are in between and check the integration between two or more units.
+	- **End-to-end tests** or big tests verify larger parts of the app at the same time, such as a whole screen or user flow.
+- Instrumented vs Local test
+	- **instrumented** tests are run on local device physical or emulator. The app is built and installed alongside a test app that injects commands and reads the state. Instrumented tests are usually UI tests, launching an app and then interacting with it.
+	- **local** tests are run on your own workstation / computer. They're usually small and fast, isolating the subject under test from the rest of the app.
 
 #### More Info:
 - [Optimize downloads for efficient network access](https://developer.android.com/training/efficient-downloads/efficient-network-access)
