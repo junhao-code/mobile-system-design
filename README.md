@@ -209,7 +209,11 @@ There's no rule of thumb here. Work closely with the interviewer: ask them if yo
 
 #### What drawing tool should I use?
 At the time of this writing - [Excalidraw](https://excalidraw.com/), [Google Jamboard](https://jamboard.google.com/), and [Google Drawings](https://docs.google.com/drawings) could be the most popular choice. Some interviewers would skip diagramming altogether and prefer a collaborative editor and a verbal discussion. Due to privacy issues, some companies would not let the candidate share the screen and use a tool of personal choice.
-
+## Navigation
+Navigation component consists of 3 key parts
+- Navigation Graph : an centralized xml resource that contains all navigation-related information
+- NavHost : empty container that displays destinations from your navigation graph. The Navigation component contains a default NavHost implementation, NavHostFragment, that displays fragment destinations
+- NavController : An object that manages app navigation within a NavHost. The NavController orchestrates the swapping of destination content in the NavHost as users move throughout your app.
 ## API Design
 The goal is to cover as much ground as possible - you won't have enough time to cover every API call - just ask the interviewer if they are particulary interested in a specific part, or choose something you know best (in case they don't have a strong preference).
 ### Real-time notification
@@ -250,6 +254,9 @@ Allows the client to stream events over an HTTP connection without polling. Can 
     - keeps a persistent connection.
     - doesn't support binary data
     - limited open connections allowed
+Learn more about Server-Sent Events
+	- [implement SSE with Kotlin flow](https://medium.com/@manoel.al.amaro/understand-kotlin-flow-coroutines-by-implementing-server-side-sent-sse-9e190ff5f24f)
+
 - **Web-Sockets**:  
 provides a full-duplex communication channels over a single TCP connection. Active connection established b/w backend and client, backend is responsible for pushing resources / responses back to client whenever there's new data. During this time, client could also make new requests to server for new data which makes it a bidirectional communication channel
   - pros:
@@ -298,11 +305,13 @@ A query language for working with API - allows clients to request data from seve
   - "leaky-abstraction" - clients become tightly coupled to the backend.
   - the performance of a query is bound to the performance of the slowest service on the backend (in case the response data is federated between multiple services).
 - when to use:
-  - Rapid changing of data requirements? Consider GraphQL!
-  - When the clients need to dynamically iterate and design data as per their need, thereby making efficient use of limited bandwidth.
-  - Caching, rate-limiting, monitoring is not a requirement.
-  - Not meant for streaming communication.
-  - Not meant for bi-directional communication.
+	- Rapid changing of data requirements? Consider GraphQL!
+	- When the clients need to dynamically iterate and design data as per their need, thereby making efficient use of limited bandwidth.
+	- Caching, rate-limiting, monitoring is not a requirement.
+	- Not meant for streaming communication.
+	- Not meant for bi-directional communication.
+Learn more about GraphQL:
+- [Github - GraphQL](https://docs.github.com/en/graphql/guides/introduction-to-graphql)
 
 #### WebSocket
 Full-duplex communication over a single TCP connection.
@@ -318,6 +327,7 @@ Full-duplex communication over a single TCP connection.
 	- Chat applications, games, etc.
 Learn more about WebSockets:
 - [WebSocket Tutorial - How WebSockets Work](https://www.youtube.com/watch?v=pNxK8fPKstc)
+- [Android Websocket examples](https://camposha.info/android-examples/android-websocket/#gsc.tab=0)
 
 #### gRPC
 Remote Procedure Call framework which runs on top of HTTP/2. Supports bi-directional streaming using a single physical connection.
@@ -367,10 +377,13 @@ The client receives a variable named Cursor along with the response. It is a poi
     - more complex backend implementation.
     - does not work well if items get deleted (ids might become invalid).
 
-You need to select a single approach after listing the possible options and discussing their pros and cons. We'll pick Cursor Pagination in the scope of the "Design Twitter Feed" question. A sample API request might look like this:  
+You need to select a single approach after listing the possible options and discussing their pros and cons. We'll pick Cursor Pagination in the scope of the "Design Twitter Feed" question. A sample API request & response might look like this:  
 ```
+Request:
 GET /v1/feed?after_id=p1234xzy&limit=20
 Authorization: Bearer <token>
+
+Response:
 {
   "data": {
     "items": [
@@ -678,7 +691,15 @@ cons:
   - [Sync is a Two-Way Street](https://tech.trello.com/sync-downloads/)
   - [Displaying Sync State](https://tech.trello.com/sync-indicators/)
 ### Caching
-_TBD_
+- Local Cache
+	- In-memory data cache
+		- pro
+			- easy to implement with a simple mutable variable to a more sophisticated class that protects from read/write operations on multiple threads
+		- con
+			- cached result is gone once user exit the app
+- Client Cache
+	- HttpClient cache response
+		- okhttp offers in-house cache which caches HTTP and HTTPS responses to the filesystem so they may be reused, saving time and bandwidth
 ### Quality Of Service
 To make your system more energy-efficient you can introduce the Quality Of Service classes for your network operations. The implementation is quite tricky but you can discuss it on a higher level:
 - Limit the number of concurrent network operations (4-10). The number itself may depend on the device state (battery/wall charger, WiFi/cellular, doze/standby, etc).
